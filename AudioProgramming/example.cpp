@@ -30,10 +30,13 @@ void addSignal(vector<float> a1, vector<float> a2);
 void multiplySignal(vector<float> a1, vector<float> a2);
 vector<float> convolution(vector<float> signal, vector<float> h);
 void LPF(vector<float> signal, int N, float Wc);
-void BPF(vector<float> signal, int N, float Wc);
+void BPF(vector<float> signal, int N, float Wc1, float Wc2);
+void HPF(vector<float> signal, int N, float Wc, float omega);
+void BSF(vector<float> signal, int N, float Wc1, float Wc2, float omega);
 void applyFade(vector<float> audioSignal, float fadeDurationInSeconds, bool fadeIn);
 void applyEcho(vector<float> audioSignal, float delayInSeconds, float decayFactor);
 void applyReverb(vector<float> audioSignal, float delayTime, float decayFactor);
+void applyFlanger(vector<float> audioSignal, float rate, float depth, float delay, float feedback);
 
 int main() {
 
@@ -56,6 +59,7 @@ int main() {
 		cout << "9. Fade \n";
 		cout << "10. Echo \n";
 		cout << "11. Reverb \n";
+		cout << "12. Planger \n";
 		cout << "14. Exit \n";
 
 		int choice; cin >> choice;
@@ -120,25 +124,44 @@ int main() {
 			cout << "2. BPF\n";
 			cout << "3. HPF\n";
 			cout << "4. BSF\n";
+			vector<float> audio = {0, 0, 0.15, 0.1, 0.2, 0.21, 0.1, 0.02 };
+			draw_gnuplot(audio, "audio origin");
 			int option; cin >> option;
 			switch (option) {
 				case 1 : {
 					cout << "Nhập tần số cắt Wc: \n";
 					float Wc; cin >> Wc;
-					int N = audioData.size();
-					LPF(audioData, N, Wc);
+					int N = audio.size();
+					LPF(audio, N, Wc);
 					break;
 				}
 				case 2 : {
-
+					cout << "Nhập tần số cắt Wc1: \n";
+					float Wc1; cin >> Wc1;
+					cout << "Nhập tần số cắt Wc2: \n";
+					float Wc2; cin >> Wc2;
+					int N = audio.size();
+					BPF(audio, N, Wc1, Wc2);
 					break;
 				}
 				case 3 : {
-
+					cout << "Nhập tần số cắt Wc: \n";
+					float Wc; cin >> Wc;
+					cout << "Nhập omega: \n";
+					float omega; cin >> omega;
+					int N = audio.size();
+					HPF(audio, N, Wc, omega);
 					break;
 				}
 				case 4 : {
-
+					cout << "Nhập tần số cắt Wc1: \n";
+					float Wc1; cin >> Wc1;
+					cout << "Nhập tần số cắt Wc2: \n";
+					float Wc2; cin >> Wc2;
+					cout << "Nhập omega: \n";
+					float omega; cin >> omega;
+					int N = audio.size();
+					BSF(audio, N, Wc1, Wc2, omega);
 					break;
 				}
 				default:
@@ -175,6 +198,19 @@ int main() {
 			applyReverb(audioData, delayTime, decayFactor);
 			break;
 		}
+		case 12: {
+			cout << "Planger : \n";
+			cout << "Nhập tốc độ giao động : \n";
+			float rate; cin >> rate;
+			cout << "Nhập độ sâu giao động: \n";
+			float depth; cin >> depth;
+			cout << "Nhập thời gian trễ động: \n";
+			float delay; cin >> delay;
+			cout << "Nhập độ phản hồi : \n";
+			float feedback; cin >> feedback;
+			applyFlanger(audioData, rate, depth, delay, feedback);
+			break;
+		}
 		case 14: {
 			exit(0);
 			break;
@@ -189,6 +225,29 @@ int main() {
 
 
 	return 0;
+}
+
+void applyFlanger(vector<float> audioSignal, float rate, float depth, float delay, float feedback) {
+	size_t delaySamples = static_cast<size_t>(delay * 44100); // 44100 mẫu mỗi giây (sample rate) trong âm thanh CD
+
+	std::vector<double> flangerSignal(audioSignal.size(), 0.0);
+
+	// Tạo âm thanh flanger bằng cách phản ứng pha và thay đổi tốc độ của nó
+	for (size_t i = 0; i < audioSignal.size(); ++i) {
+		size_t index = static_cast<size_t>(i + delaySamples * (1 + sin(2 * 3.14 * rate * i / 44100 * depth)));
+
+		if (index < audioSignal.size()) {
+			flangerSignal[i] = audioSignal[i] + audioSignal[index] * feedback;
+		}
+	}
+
+	// Kết hợp âm thanh flanger và âm thanh ban đầu
+	for (size_t i = 0; i < audioSignal.size(); ++i) {
+		audioSignal[i] += flangerSignal[i];
+	}
+	cout << "Flanger \n";
+	writeAudioFile(audioSignal, "C:\\Users\\giang\\Music\\Flanger.wav", 44100);
+	draw_gnuplot(audioSignal, "Flanger");
 }
 
 void applyReverb(vector<float> audioSignal, float delayTime, float decayFactor) {
@@ -261,16 +320,60 @@ void applyFade(vector<float>audioSignal, float fadeDurationInSeconds, bool fadeI
 	}
 }
 
-void BPF(vector<float> signal, int N, float Wc) {
+void BSF(vector<float> signal, int N, float Wc1, float Wc2, float omega) {
 	vector<float> h;
 	for (int i = 0; i < N; i++) {
-		float x = (Wc * sin(Wc * (i - (N - 1) / 2))) / (3.14 * Wc * (i - (N - 1) / 2));
+		float x;
+		if (i == (N - 1) / 2) {
+			x = (Wc1 - Wc2) / 3.14;
+		}
+		else {
+			x = omega * (i - (N - 1) / 2) - (sin(Wc1 * (i - (N - 1) / 2)) - sin(Wc2 * (i - (N - 1) / 2))) / (3.14 * (i - (N - 1) / 2));
+		}
 		h.push_back(x);
 	}
 	vector<float> window(N, 1);
 	vector<float> result = convolution(h, window);
 	vector <float> y = convolution(result, signal);
-	cout << "LPF \n";
+	cout << "BSF \n";
+	writeAudioFile(result, "C:\\Users\\giang\\Music\\BSF.wav", 44100);
+	draw_gnuplot(y, "BSF");
+}
+
+void HPF(vector<float> signal, int N, float Wc, float omega) {
+	vector<float> h;
+	for (int i = 0; i < N; i++) {
+		float x;
+		if (i == (N - 1) / 2) {
+			x = (Wc) / 3.14;
+		}
+		else {
+			x = omega * (i - (N - 1) / 2) - (sin(Wc * (i - (N - 1) / 2)) / (3.14 * (i - (N - 1) / 2)));
+		}
+		h.push_back(x);
+	}
+	vector<float> window(N, 1);
+	vector<float> result = convolution(h, window);
+	vector <float> y = convolution(result, signal);
+	cout << "HPF \n";
+	writeAudioFile(result, "C:\\Users\\giang\\Music\\HPF.wav", 44100);
+	draw_gnuplot(y, "HPF");
+}
+
+void BPF(vector<float> signal, int N, float Wc1, float Wc2) {
+	vector<float> h;
+	for (int i = 0; i < N; i++) {
+		float x;
+		if (i == (N - 1) / 2) {
+			x = (Wc1 - Wc2) / 3.14;
+		}
+		x =  (sin(Wc1 * (i - (N - 1) / 2)) - sin(Wc2 * (i - (N - 1) / 2))) / (3.14 * (i - (N - 1) / 2));
+		h.push_back(x);
+	}
+	vector<float> window(N, 1);
+	vector<float> result = convolution(h, window);
+	vector <float> y = convolution(result, signal);
+	cout << "BPF \n";
 	writeAudioFile(result, "C:\\Users\\giang\\Music\\BPF.wav", 44100);
 	draw_gnuplot(y, "BPF");
 }
@@ -278,7 +381,13 @@ void BPF(vector<float> signal, int N, float Wc) {
 void LPF(vector<float> signal, int N, float Wc) {
 	vector<float> h;
 	for (int i = 0; i < N; i++) {
-		float x = (Wc * sin(Wc * (i - (N - 1) / 2))) / (3.14 * Wc * (i - (N - 1) / 2));
+		float x;
+		if (i == (N - 1) / 2) {
+			x = Wc / 3.14;
+		}
+		else {
+			x = sin(Wc * (i - (N - 1) / 2)) / (3.14 * (i - (N - 1) / 2));
+		}
 		h.push_back(x);
 	}
 	vector<float> window(N, 1);
