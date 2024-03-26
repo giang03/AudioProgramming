@@ -20,6 +20,7 @@ void draw_gnuplot(vector<float> v0, string name) {
 
 	cin.get();
 }
+/*
 void time_shift(vector<float> audioData, int shiftSamples);
 void inversion(vector<float> audioData);
 void increaseSamplingFrequency(vector<float> audioData, int length);
@@ -37,15 +38,46 @@ void applyFade(vector<float> audioSignal, float fadeDurationInSeconds, bool fade
 void applyEcho(vector<float> audioSignal, float delayInSeconds, float decayFactor);
 void applyReverb(vector<float> audioSignal, float delayTime, float decayFactor);
 void applyFlanger(vector<float> audioSignal, float rate, float depth, float delay, float feedback);
+*/
+class AudioFile {
+private:
+	vector<float> audioData;
+	int sampleRate;
+
+public:
+	AudioFile(vector<float> data, int sampleRate) {
+		this->audioData = data;
+		this->sampleRate = sampleRate;
+	}
+	vector<float> getAudioData() {
+		return this->audioData;
+	}
+	int getSampleRate() {
+		return this->sampleRate;
+	}
+	void time_shift(int shiftSamples);
+	void increaseSamplingFrequency(int length);
+	void inversion();
+	void reduceSamplingFrequency(float factor);
+	void addSignal(vector<float> a2);
+	void multiplySignal(vector<float> a2);
+	void LPF(int N, float Wc);
+	void BPF(int N, float Wc1, float Wc2);
+	void HPF(int N, float Wc, float omega);
+	void BSF( int N, float Wc1, float Wc2, float omega);
+	void applyFade( float fadeDurationInSeconds, bool fadeIn);
+	void applyEcho(float delayInSeconds, float decayFactor);
+	void applyReverb(float delayTime, float decayFactor);
+	void applyFlanger( float rate, float depth, float delay, float feedback);
+};
 
 int main() {
 
-	vector<float> audioData = readAudioFile("C:\\Users\\giang\\Music\\example.wav");
+	AudioFile audioFile = readAudioFile("C:\\Users\\giang\\Music\\example.wav");
 	
-	int samplerate = 44100;
 
-	draw_gnuplot(audioData, "file goc");
-
+	draw_gnuplot(audioFile.getAudioData(), "file goc");
+	
 	while (true)
 	{
 		cout << "1. Time shift \n";
@@ -69,37 +101,42 @@ int main() {
 			cout << "Nhập thời gian dời theo giây : ";
 			int shiftAmount; cin >> shiftAmount;
 
-			long long shiftSamples = shiftAmount * samplerate;
-			time_shift(audioData, shiftSamples);
+			long long shiftSamples = shiftAmount * audioFile.getSampleRate();
+			audioFile.time_shift(shiftAmount);
 			break;
 		}
 		case 2: {
 			cout << "Âm thanh sau khi lật ngược : ";
-			inversion(audioData);
+			audioFile.inversion();
 			break;
 		}
 		case 3: {
 			cout << "Nhập tỷ số giãn : ";
 			int length; cin >> length;
 
-			increaseSamplingFrequency(audioData, length);
+			//increaseSamplingFrequency(audioData, length);
+			audioFile.increaseSamplingFrequency(length);
 			break;
 		}
 		case 4: {
 			cout << "Nhập tỷ số nén : ";
 			int length; cin >> length;
 
-			reduceSamplingFrequency(audioData, length);
+			//reduceSamplingFrequency(audioData, length);
+			audioFile.reduceSamplingFrequency(length);
 			break;
 		}
 		case 5: {
-			vector<float> audioData2 = readAudioFile("C:\\Users\\giang\\Music\\addSignal.wav");
-			addSignal(audioData, audioData2);
+			AudioFile audioFile2 = readAudioFile("C:\\Users\\giang\\Music\\addSignal.wav");
+			//addSignal(audioData, audioData2);
+			audioFile.addSignal(audioFile2.getAudioData());
 			break;
 		}
 		case 6: {
-			vector<float> audioData2 = readAudioFile("C:\\Users\\giang\\Music\\addSignal.wav");
-			multiplySignal(audioData, audioData2);
+			//vector<float> audioData2 = readAudioFile("C:\\Users\\giang\\Music\\addSignal.wav");
+			AudioFile audioFile2 = readAudioFile("C:\\Users\\giang\\Music\\addSignal.wav");
+			//multiplySignal(audioData, audioData2);
+			audioFile.multiplySignal(audioFile2.getAudioData());
 			break;
 		}
 		case 7: {
@@ -112,7 +149,7 @@ int main() {
 				h.push_back(x);
 			}
 			//vector<float> h = {0.5,0.4,0.1,0.4};
-			vector<float> result = convolution(audioData, h);
+			vector<float> result = convolution(audioFile.getAudioData(), h);
 			cout << "File sau khi nhân chập : \n";
 			writeAudioFile(result, "C:\\Users\\giang\\Music\\convolution.wav", 44100);
 			draw_gnuplot(result, "convolution");
@@ -132,7 +169,8 @@ int main() {
 					cout << "Nhập tần số cắt Wc: \n";
 					float Wc; cin >> Wc;
 					int N = audio.size();
-					LPF(audio, N, Wc);
+					//LPF(audio, N, Wc);
+					audioFile.LPF(N, Wc);
 					break;
 				}
 				case 2 : {
@@ -141,7 +179,8 @@ int main() {
 					cout << "Nhập tần số cắt Wc2: \n";
 					float Wc2; cin >> Wc2;
 					int N = audio.size();
-					BPF(audio, N, Wc1, Wc2);
+					//BPF(audio, N, Wc1, Wc2);
+					audioFile.BPF(N, Wc1, Wc2);
 					break;
 				}
 				case 3 : {
@@ -150,7 +189,7 @@ int main() {
 					cout << "Nhập omega: \n";
 					float omega; cin >> omega;
 					int N = audio.size();
-					HPF(audio, N, Wc, omega);
+					audioFile.HPF( N, Wc, omega);
 					break;
 				}
 				case 4 : {
@@ -161,7 +200,7 @@ int main() {
 					cout << "Nhập omega: \n";
 					float omega; cin >> omega;
 					int N = audio.size();
-					BSF(audio, N, Wc1, Wc2, omega);
+					audioFile.BSF(N, Wc1, Wc2, omega);
 					break;
 				}
 				default:
@@ -177,7 +216,7 @@ int main() {
 			bool fade = option == 1 ? true : false;
 			cout << "Nhập thời gian fade \n";
 			float time; cin >> time;
-			applyFade(audioData, time, fade);
+			audioFile.applyFade( time, fade);
 			break;
 		}
 		case 10: {
@@ -186,7 +225,7 @@ int main() {
 			float delayInSeconds; cin >> delayInSeconds;
 			cout << "Hệ số suy giảm : \n";
 			float decayFactor; cin >> decayFactor;
-			applyEcho(audioData, delayInSeconds, decayFactor);
+			audioFile.applyEcho( delayInSeconds, decayFactor);
 			break;
 		}
 		case 11: {
@@ -195,7 +234,7 @@ int main() {
 			float delayTime; cin >> delayTime;
 			cout << "Hệ số suy giảm : \n";
 			float decayFactor; cin >> decayFactor;
-			applyReverb(audioData, delayTime, decayFactor);
+			audioFile.applyReverb( delayTime, decayFactor);
 			break;
 		}
 		case 12: {
@@ -208,7 +247,7 @@ int main() {
 			float delay; cin >> delay;
 			cout << "Nhập độ phản hồi : \n";
 			float feedback; cin >> feedback;
-			applyFlanger(audioData, rate, depth, delay, feedback);
+			audioFile.applyFlanger( rate, depth, delay, feedback);
 			break;
 		}
 		case 14: {
@@ -220,21 +259,22 @@ int main() {
 		}
 		
 	}
-
+	
 	//reverse(audioData.begin(), audioData.end());
 
 
 	return 0;
 }
 
-void applyFlanger(vector<float> audioSignal, float rate, float depth, float delay, float feedback) {
-	size_t delaySamples = static_cast<size_t>(delay * 44100); // 44100 mẫu mỗi giây (sample rate) trong âm thanh CD
+void AudioFile::applyFlanger( float rate, float depth, float delay, float feedback) {
+	vector<float> audioSignal = this->audioData;
+	size_t delaySamples = static_cast<size_t>(delay * this->sampleRate); // 44100 mẫu mỗi giây (sample rate) trong âm thanh CD
 
 	std::vector<double> flangerSignal(audioSignal.size(), 0.0);
 
 	// Tạo âm thanh flanger bằng cách phản ứng pha và thay đổi tốc độ của nó
 	for (size_t i = 0; i < audioSignal.size(); ++i) {
-		size_t index = static_cast<size_t>(i + delaySamples * (1 + sin(2 * 3.14 * rate * i / 44100 * depth)));
+		size_t index = static_cast<size_t>(i + delaySamples * (1 + sin(2 * 3.14 * rate * i / this->sampleRate * depth)));
 
 		if (index < audioSignal.size()) {
 			flangerSignal[i] = audioSignal[i] + audioSignal[index] * feedback;
@@ -246,12 +286,13 @@ void applyFlanger(vector<float> audioSignal, float rate, float depth, float dela
 		audioSignal[i] += flangerSignal[i];
 	}
 	cout << "Flanger \n";
-	writeAudioFile(audioSignal, "C:\\Users\\giang\\Music\\Flanger.wav", 44100);
+	writeAudioFile(audioSignal, "C:\\Users\\giang\\Music\\Flanger.wav", this->sampleRate);
 	draw_gnuplot(audioSignal, "Flanger");
 }
 
-void applyReverb(vector<float> audioSignal, float delayTime, float decayFactor) {
-	size_t delaySamples = static_cast<size_t>(delayTime * 44100); // 44100 mẫu mỗi giây (sample rate) trong âm thanh CD
+void AudioFile::applyReverb( float delayTime, float decayFactor) {
+	vector<float> audioSignal = this->audioData;
+	size_t delaySamples = static_cast<size_t>(delayTime * this->sampleRate); // 44100 mẫu mỗi giây (sample rate) trong âm thanh CD
 
 	std::vector<double> reverbSignal(audioSignal.size() + delaySamples, 0.0);
 
@@ -268,12 +309,13 @@ void applyReverb(vector<float> audioSignal, float delayTime, float decayFactor) 
 		audioSignal[i] += reverbSignal[i];
 	}
 	cout << "Reverb \n";
-	writeAudioFile(audioSignal, "C:\\Users\\giang\\Music\\Reverb.wav", 44100);
+	writeAudioFile(audioSignal, "C:\\Users\\giang\\Music\\Reverb.wav", this->sampleRate);
 	draw_gnuplot(audioSignal, "Reverb");
 }
 
-void applyEcho(vector<float> audioSignal, float delayInSeconds, float decayFactor) {
-	size_t delaySamples = static_cast<size_t>(delayInSeconds * 44100); // 44100 là mẫu mỗi giây (sample rate) trong âm thanh CD
+void AudioFile::applyEcho( float delayInSeconds, float decayFactor) {
+	vector<float> audioSignal = this->audioData;
+	size_t delaySamples = static_cast<size_t>(delayInSeconds * this->sampleRate); // 44100 là mẫu mỗi giây (sample rate) trong âm thanh CD
 	size_t totalSamples = audioSignal.size();
 	std::vector<double> echoBuffer(delaySamples, 0.0);
 
@@ -285,12 +327,13 @@ void applyEcho(vector<float> audioSignal, float delayInSeconds, float decayFacto
 		echoBuffer[i % delaySamples] = audioSignal[i];
 	}
 	cout << "Echo \n";
-	writeAudioFile(audioSignal, "C:\\Users\\giang\\Music\\Echo.wav", 44100);
+	writeAudioFile(audioSignal, "C:\\Users\\giang\\Music\\Echo.wav", this->sampleRate);
 	draw_gnuplot(audioSignal, "Echo");
 }
 
-void applyFade(vector<float>audioSignal, float fadeDurationInSeconds, bool fadeIn) {
-	size_t fadeSamples = static_cast<size_t>(fadeDurationInSeconds * 44100);
+void AudioFile::applyFade(float fadeDurationInSeconds, bool fadeIn) {
+	vector<float>audioSignal = this->audioData;
+	size_t fadeSamples = static_cast<size_t>(fadeDurationInSeconds * this->sampleRate);
 
 	if (fadeSamples > audioSignal.size()) {
 		cerr << "Không thể áp dụng fade: Độ dài fade lớn hơn độ dài tín hiệu." << std::endl;
@@ -306,7 +349,7 @@ void applyFade(vector<float>audioSignal, float fadeDurationInSeconds, bool fadeI
 			fadeFactor += fadeFactorIncrement;
 		}
 		cout << "FadeIn \n";
-		writeAudioFile(audioSignal, "C:\\Users\\giang\\Music\\FadeIn.wav", 44100);
+		writeAudioFile(audioSignal, "C:\\Users\\giang\\Music\\FadeIn.wav", this->sampleRate);
 		draw_gnuplot(audioSignal, "FadeIn");
 	}
 	else {
@@ -315,12 +358,13 @@ void applyFade(vector<float>audioSignal, float fadeDurationInSeconds, bool fadeI
 			fadeFactor -= fadeFactorIncrement;
 		}
 		cout << "FadeOut \n";
-		writeAudioFile(audioSignal, "C:\\Users\\giang\\Music\\FadeOut.wav", 44100);
+		writeAudioFile(audioSignal, "C:\\Users\\giang\\Music\\FadeOut.wav", this->sampleRate);
 		draw_gnuplot(audioSignal, "FadeOut");
 	}
 }
 
-void BSF(vector<float> signal, int N, float Wc1, float Wc2, float omega) {
+void AudioFile::BSF( int N, float Wc1, float Wc2, float omega) {
+	vector<float> signal = this->audioData;
 	vector<float> h;
 	for (int i = 0; i < N; i++) {
 		float x;
@@ -336,11 +380,12 @@ void BSF(vector<float> signal, int N, float Wc1, float Wc2, float omega) {
 	vector<float> result = convolution(h, window);
 	vector <float> y = convolution(result, signal);
 	cout << "BSF \n";
-	writeAudioFile(result, "C:\\Users\\giang\\Music\\BSF.wav", 44100);
+	writeAudioFile(result, "C:\\Users\\giang\\Music\\BSF.wav", this->sampleRate);
 	draw_gnuplot(y, "BSF");
 }
 
-void HPF(vector<float> signal, int N, float Wc, float omega) {
+void AudioFile::HPF( int N, float Wc, float omega) {
+	vector<float> signal = this->audioData;
 	vector<float> h;
 	for (int i = 0; i < N; i++) {
 		float x;
@@ -356,11 +401,12 @@ void HPF(vector<float> signal, int N, float Wc, float omega) {
 	vector<float> result = convolution(h, window);
 	vector <float> y = convolution(result, signal);
 	cout << "HPF \n";
-	writeAudioFile(result, "C:\\Users\\giang\\Music\\HPF.wav", 44100);
+	writeAudioFile(result, "C:\\Users\\giang\\Music\\HPF.wav", this->sampleRate);
 	draw_gnuplot(y, "HPF");
 }
 
-void BPF(vector<float> signal, int N, float Wc1, float Wc2) {
+void AudioFile::BPF( int N, float Wc1, float Wc2) {
+	vector<float> signal = this->audioData;
 	vector<float> h;
 	for (int i = 0; i < N; i++) {
 		float x;
@@ -374,11 +420,12 @@ void BPF(vector<float> signal, int N, float Wc1, float Wc2) {
 	vector<float> result = convolution(h, window);
 	vector <float> y = convolution(result, signal);
 	cout << "BPF \n";
-	writeAudioFile(result, "C:\\Users\\giang\\Music\\BPF.wav", 44100);
+	writeAudioFile(result, "C:\\Users\\giang\\Music\\BPF.wav", this->sampleRate);
 	draw_gnuplot(y, "BPF");
 }
 
-void LPF(vector<float> signal, int N, float Wc) {
+void AudioFile::LPF(int N, float Wc) {
+	vector<float> signal = this->audioData;
 	vector<float> h;
 	for (int i = 0; i < N; i++) {
 		float x;
@@ -394,7 +441,7 @@ void LPF(vector<float> signal, int N, float Wc) {
 	vector<float> result = convolution(h, window);
 	vector <float> y = convolution(result, signal);
 	cout << "LPF \n";
-	writeAudioFile(result, "C:\\Users\\giang\\Music\\LPF.wav", 44100);
+	writeAudioFile(result, "C:\\Users\\giang\\Music\\LPF.wav", this->sampleRate);
 	draw_gnuplot(y, "LPF");
 }
 
@@ -410,8 +457,9 @@ vector<float> convolution(vector<float> signal , vector<float> h) {
 	return result;
 }
 
-void multiplySignal(vector<float> a1, vector<float> a2) {
-	int samplingFrequency = 44100;
+void AudioFile::multiplySignal( vector<float> a2) {
+	vector<float> a1 = this->audioData;
+	int samplingFrequency = this->sampleRate;
 	vector<float> output;
 	int length = a1.size() < a2.size() ? a1.size() : a2.size();
 	for (int i = 0; i < length; i++) {
@@ -428,8 +476,9 @@ void multiplySignal(vector<float> a1, vector<float> a2) {
 	draw_gnuplot(output, "outputMultiplySignal");
 }
 
-void addSignal(vector<float> a1, vector<float> a2) {
-	int samplingFrequency = 44100;
+void AudioFile::addSignal(vector<float> a2) {
+	vector<float> a1 = this->audioData;
+	int samplingFrequency = this->sampleRate;
 	vector<float> output;
 	int length = a1.size() < a2.size() ? a1.size() : a2.size();
 	for (int i = 0; i < length; i++) {
@@ -446,8 +495,9 @@ void addSignal(vector<float> a1, vector<float> a2) {
 	draw_gnuplot(output, "addSinal");
 }
 
-void reduceSamplingFrequency(vector<float> audioData, float factor) {
-	int samplingFrequency = 44100;
+void AudioFile::reduceSamplingFrequency(float factor) {
+	vector<float> audioData = this->audioData;
+	int samplingFrequency = this->sampleRate;
 	vector<float> reducedSamples;
 	for (int i = 0; i < audioData.size(); i += factor) {
 		reducedSamples.push_back(audioData[i]);	
@@ -455,12 +505,13 @@ void reduceSamplingFrequency(vector<float> audioData, float factor) {
 	samplingFrequency /= factor;
 	cout << "Tần số lấy mẫu sau khi giảm : " << samplingFrequency << "Hz" << endl;
 	writeAudioFile(reducedSamples, "C:\\Users\\giang\\Music\\reduce.wav", samplingFrequency);
-	vector<float> outputData = readAudioFile("C:\\Users\\giang\\Music\\reduce.wav");
-	draw_gnuplot(outputData, "reduceSampling");
+	AudioFile outputData = readAudioFile("C:\\Users\\giang\\Music\\reduce.wav");
+	draw_gnuplot(outputData.getAudioData(), "reduceSampling");
 }
 
 // tăng tần số mẫu 
-void increaseSamplingFrequency(vector<float> audioData, int length) {
+void AudioFile::increaseSamplingFrequency( int length) {
+	vector<float> audioData = this->audioData;
 	vector<float> output;
 	for (int i = 0; i < audioData.size() ; i++) {
 		output.push_back(audioData[i]);
@@ -468,19 +519,21 @@ void increaseSamplingFrequency(vector<float> audioData, int length) {
 			output.push_back(0.0f);
 		}
 	}
-	int samplingFrequency = 44100 * length;
+	int samplingFrequency = this->sampleRate * length;
 	cout << "Tần số lấy mẫu sau khi tăng : " << samplingFrequency << "Hz" << endl;
 	writeAudioFile(output, "C:\\Users\\giang\\Music\\increase.wav", samplingFrequency);
-	vector<float> outputData = readAudioFile("C:\\Users\\giang\\Music\\increase.wav");
-	draw_gnuplot(outputData, "increaseSampling");
+	AudioFile outputData = readAudioFile("C:\\Users\\giang\\Music\\increase.wav");
+	draw_gnuplot(outputData.getAudioData(), "increaseSampling");
 }
 
-void inversion(vector<float> audioData) {
+void AudioFile::inversion() {
+	vector<float> audioData = this->audioData;
 	reverse(audioData.begin(), audioData.end());
 	draw_gnuplot(audioData,"inversion");
 }
 
-void time_shift(vector<float> audioData, int shiftSamples) {
+void AudioFile::time_shift(int shiftSamples) {
+	vector<float> audioData = this->audioData;
 	vector<float> outputData(audioData.size());
 	for (int i = 0; i < audioData.size(); i++) {
 		int shifteIndex = i + shiftSamples;
@@ -491,7 +544,7 @@ void time_shift(vector<float> audioData, int shiftSamples) {
 	draw_gnuplot(outputData,"time_shift");
 }
 
-vector<float> readAudioFile(string fileName) {
+AudioFile readAudioFile(string fileName) {
 	SndfileHandle file(fileName, SFM_READ);
 
 	if (!file) {
@@ -507,7 +560,8 @@ vector<float> readAudioFile(string fileName) {
 	// Đọc dữ liệu âm thanh từ file
 	vector<float> audioData(file.frames() * file.channels());
 	file.read(audioData.data(), file.frames() * file.channels());
-	return audioData;
+	AudioFile audioFile = AudioFile(audioData, file.samplerate());
+	return audioFile;
 }
 
 void writeAudioFile(const std::vector<float>& audioData, const char* filename, int sampleRate) {
